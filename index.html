@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Giant Eagle Real Estate — Invoice Builder</title>
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lato:wght@300;400;700&family=Dancing+Script:wght@600&display=swap" rel="stylesheet" />
+
+  <!-- Firebase v9 (compat mode — works without bundler) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+<!-- ============================================================
+     APP SHELL — Two-column layout: Form (left) + Preview (right)
+     ============================================================ -->
+<div class="app-shell">
+
+  <!-- ── SIDEBAR / FORM PANEL ── -->
+  <aside class="form-panel" id="formPanel">
+
+    <div class="form-header">
+      <div class="form-logo-row">
+        <!-- SVG recreation of the Giant Eagle logo mark -->
+        <svg class="brand-icon" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="22" cy="22" r="14" fill="none" stroke="#2d6a4f" stroke-width="2.5"/>
+          <circle cx="22" cy="22" r="8"  fill="none" stroke="#2d6a4f" stroke-width="1.5"/>
+          <!-- decorative feather curves -->
+          <path d="M22 8 C30 12 38 8 36 18 C34 26 26 28 22 36 C18 28 10 26 8 18 C6 8 14 12 22 8Z"
+                fill="none" stroke="#2d6a4f" stroke-width="1.8" stroke-linejoin="round"/>
+        </svg>
+        <div>
+          <h1 class="brand-name">GIANT EAGLE</h1>
+          <p class="brand-sub">REAL ESTATE LTD</p>
+          <p class="brand-slogan">...trust the process.</p>
+        </div>
+      </div>
+      <h2 class="panel-title">Invoice Builder</h2>
+    </div>
+
+    <!-- Nav tabs -->
+    <div class="tab-bar">
+      <button class="tab active" data-tab="create" onclick="switchTab('create')">✦ New Invoice</button>
+      <button class="tab" data-tab="history" onclick="switchTab('history')">☰ History</button>
+    </div>
+
+    <!-- ══════════════ CREATE TAB ══════════════ -->
+    <div id="tab-create" class="tab-content active">
+
+      <!-- Invoice Meta -->
+      <div class="form-section">
+        <h3 class="section-title">Invoice Info</h3>
+        <div class="field-row two-col">
+          <div class="field">
+            <label>Invoice No.</label>
+            <input type="text" id="invoiceNo" placeholder="Auto-generated" readonly />
+          </div>
+          <div class="field">
+            <label>Date</label>
+            <input type="date" id="invoiceDate" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Client Info -->
+      <div class="form-section">
+        <h3 class="section-title">Client Details</h3>
+        <div class="field">
+          <label>Customer / Company Name</label>
+          <input type="text" id="customerName" placeholder="e.g. Venora Ventures Ltd" oninput="updatePreview()" />
+        </div>
+        <div class="field">
+          <label>Property Description / Address</label>
+          <textarea id="propertyDescription" rows="3" placeholder="e.g. Millennium Builder's Plaza, Opposite NNPC Towers..." oninput="updatePreview()"></textarea>
+        </div>
+      </div>
+
+      <!-- Pricing -->
+      <div class="form-section">
+        <h3 class="section-title">Pricing</h3>
+        <div class="field-row two-col">
+          <div class="field">
+            <label>Rate Per SQM (₦)</label>
+            <input type="number" id="ratePerSqm" placeholder="140000" oninput="updatePreview()" />
+          </div>
+          <div class="field">
+            <label>Discount (₦)</label>
+            <input type="number" id="discount" placeholder="0" oninput="updatePreview()" />
+          </div>
+        </div>
+        <div class="field-row two-col">
+          <div class="field">
+            <label>Legal Fee (%)</label>
+            <input type="number" id="legalFee" placeholder="5" oninput="updatePreview()" />
+          </div>
+          <div class="field">
+            <label>Agency Fee (%)</label>
+            <input type="number" id="agencyFee" placeholder="5" oninput="updatePreview()" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Dynamic Units -->
+      <div class="form-section">
+        <h3 class="section-title">Property Units</h3>
+        <div id="unitsContainer"></div>
+        <button class="btn-add-unit" onclick="addUnit()">+ Add Unit</button>
+      </div>
+
+      <!-- Bank Details -->
+      <div class="form-section">
+        <h3 class="section-title">Bank Details</h3>
+        <div class="field">
+          <label>Bank Name</label>
+          <input type="text" id="bankName" placeholder="e.g. FCMB" oninput="updatePreview()" />
+        </div>
+        <div class="field">
+          <label>Account Name</label>
+          <input type="text" id="accountName" placeholder="e.g. HATFIELD GUEST" oninput="updatePreview()" />
+        </div>
+        <div class="field">
+          <label>Account Number</label>
+          <input type="text" id="accountNumber" placeholder="e.g. 2007052014" oninput="updatePreview()" />
+        </div>
+        <div class="field">
+          <label>Payment Phone</label>
+          <input type="text" id="paymentPhone" value="08032961727" oninput="updatePreview()" />
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="form-section">
+        <h3 class="section-title">Additional Notes <span class="optional">(optional)</span></h3>
+        <textarea id="additionalNotes" rows="3" placeholder="Any additional information..." oninput="updatePreview()"></textarea>
+      </div>
+
+      <!-- Actions -->
+      <div class="form-actions">
+        <button class="btn-print" onclick="generateAndPrint()">
+          <span class="btn-icon">🖨</span> Generate / Print Invoice
+        </button>
+        <button class="btn-save" onclick="saveInvoice()">
+          <span class="btn-icon">💾</span> Save Invoice
+        </button>
+        <button class="btn-reset" onclick="resetForm()">↺ New Invoice</button>
+      </div>
+
+    </div><!-- /tab-create -->
+
+    <!-- ══════════════ HISTORY TAB ══════════════ -->
+    <div id="tab-history" class="tab-content">
+      <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="Search by invoice no, name, date..." oninput="searchInvoices()" />
+      </div>
+      <div id="invoiceList" class="invoice-list">
+        <p class="empty-msg">Loading invoices...</p>
+      </div>
+    </div><!-- /tab-history -->
+
+  </aside><!-- /form-panel -->
+
+  <!-- ── PREVIEW PANEL ── -->
+  <main class="preview-panel" id="previewPanel">
+    <div class="preview-toolbar">
+      <span class="preview-label">Live Preview</span>
+      <button class="btn-print-sm" onclick="generateAndPrint()">🖨 Print</button>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         PRINTABLE INVOICE — this is what gets printed
+         ══════════════════════════════════════════ -->
+    <div id="invoiceWrapper" class="invoice-wrapper">
+      <div id="invoice" class="invoice-page">
+
+        <!-- HEADER -->
+        <div class="inv-header">
+          <div class="inv-logo-block">
+            <!-- SVG Logo (recreated from the original) -->
+            <svg class="inv-logo-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+              <!-- Outer decorative ring -->
+              <circle cx="32" cy="36" r="22" fill="none" stroke="#3a7d5a" stroke-width="2"/>
+              <circle cx="32" cy="36" r="14" fill="none" stroke="#3a7d5a" stroke-width="1.2"/>
+              <!-- Inner G -->
+              <text x="24" y="42" font-family="serif" font-size="18" font-weight="bold" fill="#3a7d5a">G</text>
+              <!-- Top feather/leaf motif -->
+              <path d="M32 14 C38 18 46 14 44 24 C42 32 34 34 32 42 C30 34 22 32 20 24 C18 14 26 18 32 14Z"
+                    fill="none" stroke="#3a7d5a" stroke-width="1.5" stroke-linejoin="round"/>
+              <!-- Small decorative dots -->
+              <circle cx="32" cy="12" r="1.5" fill="#3a7d5a"/>
+              <circle cx="46" cy="20" r="1" fill="#3a7d5a"/>
+              <circle cx="18" cy="20" r="1" fill="#3a7d5a"/>
+            </svg>
+            <div class="inv-company-text">
+              <div class="inv-company-name">GIANT EAGLE</div>
+              <div class="inv-company-sub">REAL ESTATE LTD</div>
+              <div class="inv-company-slogan">...trust the process.</div>
+            </div>
+          </div>
+          <div class="inv-meta-block">
+            <div class="inv-rc">RC: 7451912</div>
+            <div class="inv-number" id="prev-invoiceNo">INVOICE 001</div>
+            <div class="inv-date" id="prev-invoiceDate">Date: —</div>
+          </div>
+        </div>
+
+        <!-- Decorative top border line -->
+        <div class="inv-top-rule"></div>
+
+        <!-- CLIENT INFO -->
+        <div class="inv-client-block">
+          <div class="inv-client-name" id="prev-customerName">—</div>
+          <div class="inv-client-address" id="prev-propertyDescription">—</div>
+        </div>
+
+        <!-- Invoice Title -->
+        <div class="inv-title-row">
+          <span class="inv-title">OFFICE SPACE RENT INVOICE</span>
+        </div>
+
+        <!-- Units Table -->
+        <table class="inv-table" id="prev-unitsTable">
+          <thead>
+            <tr>
+              <th>Description:</th>
+              <th>Size:</th>
+              <th>Rate</th>
+              <th>Amount (₦)</th>
+            </tr>
+          </thead>
+          <tbody id="prev-unitsBody">
+            <tr>
+              <td colspan="4" style="text-align:center;color:#aaa;">Add units in the form</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Totals block -->
+        <div class="inv-totals">
+          <p class="inv-subtotal">Sub Total: <span id="prev-subTotal">₦0</span></p>
+          <p class="inv-discount" id="prev-discountRow" style="display:none">Further Discount of: <span id="prev-discountAmt">₦0</span></p>
+          <p class="inv-agreed"><strong>AGREED AMOUNT PAYABLE: <span id="prev-agreedAmt">₦0</span></strong></p>
+        </div>
+
+        <!-- Additional Charges -->
+        <div class="inv-charges-section">
+          <p class="inv-charges-label">Additional Charges:</p>
+          <table class="inv-charges-table" id="prev-chargesTable">
+            <thead>
+              <tr><th>Description</th><th>Rate</th><th>Amount</th></tr>
+            </thead>
+            <tbody id="prev-chargesBody">
+              <tr><td>Legal Fee</td><td id="prev-legalRate">5%</td><td id="prev-legalAmt">₦0</td></tr>
+              <tr><td>Agency Fee</td><td id="prev-agencyRate">5%</td><td id="prev-agencyAmt">₦0</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Grand Total -->
+        <div class="inv-grand-total">
+          <strong>GRAND TOTAL PAYABLE: <span id="prev-grandTotal">₦0</span></strong>
+        </div>
+
+        <!-- Bank Details -->
+        <div class="inv-bank-section">
+          <p class="inv-bank-label"><u>RENT ACCOUNT:</u></p>
+          <p class="inv-bank-line"><strong>The Landlord's Bank Name: <span id="prev-bankName">—</span></strong></p>
+          <p class="inv-bank-line"><strong>Account Name: <span id="prev-accountName">—</span></strong></p>
+          <p class="inv-bank-line"><strong>Account Number: <span id="prev-accountNumber">—</span></strong></p>
+        </div>
+
+        <!-- Payment Instruction -->
+        <div class="inv-payment-instruction">
+          <p id="prev-paymentInstruction">Kindly make payment and forward evidence of payment to <strong><span id="prev-paymentPhone">08032961727</span></strong> for confirmation.</p>
+        </div>
+
+        <!-- Notes -->
+        <div class="inv-notes" id="prev-notesBlock" style="display:none">
+          <p id="prev-notes"></p>
+        </div>
+
+        <!-- Signature -->
+        <div class="inv-signature-block">
+          <div class="inv-signature-left">
+            <p class="inv-thank-you">Thank you for your patronage.</p>
+            <!-- Signature image (SVG recreation of handwritten sig) -->
+            <div class="inv-sig-image">
+              <svg viewBox="0 0 160 80" xmlns="http://www.w3.org/2000/svg" class="sig-svg">
+                <path d="M20 55 C25 40 30 35 35 38 C42 42 38 55 45 50 C52 45 48 30 55 35 C62 40 58 58 65 52 C70 47 68 38 75 42 C82 46 78 60 85 55 C90 50 88 40 95 38 C100 37 102 45 108 50 C114 55 112 45 118 42 C124 39 126 50 132 48" 
+                      stroke="#222" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M30 60 C40 62 50 65 60 62 C70 60 80 63 90 60"
+                      stroke="#222" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+                <text x="15" y="75" font-family="serif" font-size="8" fill="#555" font-style="italic">CEO</text>
+              </svg>
+            </div>
+            <div class="inv-sig-name">Braveman Akpor</div>
+          </div>
+          <!-- Right: stamp area is intentionally left blank (no RECEIVED stamp) -->
+          <div class="inv-stamp-area"></div>
+        </div>
+
+        <!-- Footer -->
+        <div class="inv-footer">
+          <div class="inv-footer-rule"></div>
+          <div class="inv-footer-cols">
+            <div class="inv-footer-item">
+              <span class="footer-icon">📍</span>
+              <span>Suite 001 Millennium Builders Plaza,<br/>Herbert Macaulay Way,<br/>Central Business District Area Abuja.</span>
+            </div>
+            <div class="inv-footer-item">
+              <span class="footer-icon">✉</span>
+              <span>gianteaglerealestateltd@gmail.com</span>
+            </div>
+            <div class="inv-footer-item">
+              <span class="footer-icon">🌐</span>
+              <span>www.gianteaglerealestate.com</span>
+            </div>
+            <div class="inv-footer-item">
+              <span class="footer-icon">📞</span>
+              <span>+234 803 296 1727</span>
+            </div>
+          </div>
+          <!-- Decorative corner triangle (bottom-right, matching original) -->
+          <div class="inv-corner-accent"></div>
+        </div>
+
+      </div><!-- /invoice-page -->
+    </div><!-- /invoice-wrapper -->
+
+  </main><!-- /preview-panel -->
+
+</div><!-- /app-shell -->
+
+<!-- ── TOAST NOTIFICATION ── -->
+<div id="toast" class="toast"></div>
+
+<!-- ── CONFIRM MODAL ── -->
+<div id="confirmModal" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <p id="confirmMsg">Are you sure?</p>
+    <div class="modal-actions">
+      <button class="btn-confirm-yes" id="confirmYes">Yes, Delete</button>
+      <button class="btn-confirm-no" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
