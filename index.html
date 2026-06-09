@@ -5,84 +5,82 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Giant Eagle Real Estate — Invoice Builder</title>
   <link rel="stylesheet" href="style.css" />
-
-  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lato:wght@300;400;700&family=Dancing+Script:wght@600&display=swap" rel="stylesheet" />
-
-  <!-- Firebase v9 (compat mode — works without bundler) -->
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet" />
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
-<!-- ============================================================
-     APP SHELL — Two-column layout: Form (left) + Preview (right)
-     ============================================================ -->
 <div class="app-shell">
 
-  <!-- ── SIDEBAR / FORM PANEL ── -->
+  <!-- ── FORM PANEL ── -->
   <aside class="form-panel" id="formPanel">
 
     <div class="form-header">
       <div class="form-logo-row">
-        <!-- SVG recreation of the Giant Eagle logo mark -->
-        <svg class="brand-icon" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="22" cy="22" r="14" fill="none" stroke="#2d6a4f" stroke-width="2.5"/>
-          <circle cx="22" cy="22" r="8"  fill="none" stroke="#2d6a4f" stroke-width="1.5"/>
-          <!-- decorative feather curves -->
-          <path d="M22 8 C30 12 38 8 36 18 C34 26 26 28 22 36 C18 28 10 26 8 18 C6 8 14 12 22 8Z"
-                fill="none" stroke="#2d6a4f" stroke-width="1.8" stroke-linejoin="round"/>
+        <!-- Logo SVG matching official letterhead: circular emblem with wings -->
+        <svg class="brand-svg" viewBox="0 0 70 70" xmlns="http://www.w3.org/2000/svg">
+          <!-- Outer ring -->
+          <circle cx="35" cy="38" r="20" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="1.5"/>
+          <!-- Inner circle -->
+          <circle cx="35" cy="38" r="13" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1"/>
+          <!-- "G" letter inside -->
+          <text x="28" y="44" font-family="Georgia,serif" font-size="16" font-weight="bold" fill="rgba(255,255,255,0.9)">G</text>
+          <!-- Left wing -->
+          <path d="M15 38 C10 28 8 18 15 15 C20 13 25 20 22 28 C20 33 18 36 15 38Z" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.2"/>
+          <path d="M15 38 C12 32 11 24 16 20 C18 22 20 27 18 32Z" fill="rgba(255,255,255,0.3)"/>
+          <!-- Right wing -->
+          <path d="M55 38 C60 28 62 18 55 15 C50 13 45 20 48 28 C50 33 52 36 55 38Z" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.2"/>
+          <path d="M55 38 C58 32 59 24 54 20 C52 22 50 27 52 32Z" fill="rgba(255,255,255,0.3)"/>
+          <!-- Top leaf/feather -->
+          <path d="M35 18 C38 14 42 12 40 18 C38 22 36 24 35 18Z" fill="rgba(255,255,255,0.5)"/>
+          <path d="M35 18 C32 14 28 12 30 18 C32 22 34 24 35 18Z" fill="rgba(255,255,255,0.5)"/>
+          <circle cx="35" cy="12" r="2" fill="rgba(255,255,255,0.6)"/>
         </svg>
-        <div>
-          <h1 class="brand-name">GIANT EAGLE</h1>
-          <p class="brand-sub">REAL ESTATE LTD</p>
-          <p class="brand-slogan">...trust the process.</p>
+        <div class="brand-text">
+          <div class="brand-name">GIANT EAGLE</div>
+          <div class="brand-sub">REAL ESTATE LTD</div>
+          <div class="brand-slogan">...trust the process.</div>
         </div>
       </div>
-      <h2 class="panel-title">Invoice Builder</h2>
+      <div class="panel-label">INVOICE BUILDER</div>
     </div>
 
-    <!-- Nav tabs -->
     <div class="tab-bar">
-      <button class="tab active" data-tab="create" onclick="switchTab('create')">✦ New Invoice</button>
+      <button class="tab active" data-tab="create" onclick="switchTab('create')">+ New Invoice</button>
       <button class="tab" data-tab="history" onclick="switchTab('history')">☰ History</button>
     </div>
 
-    <!-- ══════════════ CREATE TAB ══════════════ -->
+    <!-- CREATE TAB -->
     <div id="tab-create" class="tab-content active">
-
-      <!-- Invoice Meta -->
       <div class="form-section">
-        <h3 class="section-title">Invoice Info</h3>
         <div class="field-row two-col">
           <div class="field">
             <label>Invoice No.</label>
-            <input type="text" id="invoiceNo" placeholder="Auto-generated" readonly />
+            <input type="text" id="invoiceNo" readonly />
           </div>
           <div class="field">
             <label>Date</label>
-            <input type="date" id="invoiceDate" />
+            <input type="date" id="invoiceDate" oninput="updatePreview()" />
           </div>
         </div>
       </div>
 
-      <!-- Client Info -->
       <div class="form-section">
-        <h3 class="section-title">Client Details</h3>
+        <h3 class="sec-title">Client Details</h3>
         <div class="field">
           <label>Customer / Company Name</label>
           <input type="text" id="customerName" placeholder="e.g. Venora Ventures Ltd" oninput="updatePreview()" />
         </div>
         <div class="field">
-          <label>Property Description / Address</label>
+          <label>Client Address</label>
           <textarea id="propertyDescription" rows="3" placeholder="e.g. Millennium Builder's Plaza, Opposite NNPC Towers..." oninput="updatePreview()"></textarea>
         </div>
       </div>
 
-      <!-- Pricing -->
       <div class="form-section">
-        <h3 class="section-title">Pricing</h3>
+        <h3 class="sec-title">Pricing</h3>
         <div class="field-row two-col">
           <div class="field">
             <label>Rate Per SQM (₦)</label>
@@ -105,27 +103,25 @@
         </div>
       </div>
 
-      <!-- Dynamic Units -->
       <div class="form-section">
-        <h3 class="section-title">Property Units</h3>
+        <h3 class="sec-title">Property Units</h3>
         <div id="unitsContainer"></div>
         <button class="btn-add-unit" onclick="addUnit()">+ Add Unit</button>
       </div>
 
-      <!-- Bank Details -->
       <div class="form-section">
-        <h3 class="section-title">Bank Details</h3>
+        <h3 class="sec-title">Bank Details</h3>
         <div class="field">
           <label>Bank Name</label>
-          <input type="text" id="bankName" placeholder="e.g. FCMB" oninput="updatePreview()" />
+          <input type="text" id="bankName" value="FCMB" oninput="updatePreview()" />
         </div>
         <div class="field">
           <label>Account Name</label>
-          <input type="text" id="accountName" placeholder="e.g. HATFIELD GUEST" oninput="updatePreview()" />
+          <input type="text" id="accountName" value="HATFIELD GUEST" oninput="updatePreview()" />
         </div>
         <div class="field">
           <label>Account Number</label>
-          <input type="text" id="accountNumber" placeholder="e.g. 2007052014" oninput="updatePreview()" />
+          <input type="text" id="accountNumber" value="2007052014" oninput="updatePreview()" />
         </div>
         <div class="field">
           <label>Payment Phone</label>
@@ -133,218 +129,186 @@
         </div>
       </div>
 
-      <!-- Notes -->
       <div class="form-section">
-        <h3 class="section-title">Additional Notes <span class="optional">(optional)</span></h3>
-        <textarea id="additionalNotes" rows="3" placeholder="Any additional information..." oninput="updatePreview()"></textarea>
+        <h3 class="sec-title">Additional Notes <span class="opt">(optional)</span></h3>
+        <textarea id="additionalNotes" rows="3" oninput="updatePreview()"></textarea>
       </div>
 
-      <!-- Actions -->
       <div class="form-actions">
-        <button class="btn-print" onclick="generateAndPrint()">
-          <span class="btn-icon">🖨</span> Generate / Print Invoice
-        </button>
-        <button class="btn-save" onclick="saveInvoice()">
-          <span class="btn-icon">💾</span> Save Invoice
-        </button>
-        <button class="btn-reset" onclick="resetForm()">↺ New Invoice</button>
+        <button class="btn-print" onclick="generateAndPrint()">🖨&nbsp; Generate / Print Invoice</button>
+        <button class="btn-save"  onclick="saveInvoice()">💾&nbsp; Save Invoice</button>
+        <button class="btn-reset" onclick="resetForm()">↺ Start New Invoice</button>
       </div>
+    </div>
 
-    </div><!-- /tab-create -->
-
-    <!-- ══════════════ HISTORY TAB ══════════════ -->
+    <!-- HISTORY TAB -->
     <div id="tab-history" class="tab-content">
-      <div class="search-bar">
+      <div class="search-wrap">
         <input type="text" id="searchInput" placeholder="Search by invoice no, name, date..." oninput="searchInvoices()" />
       </div>
-      <div id="invoiceList" class="invoice-list">
-        <p class="empty-msg">Loading invoices...</p>
-      </div>
-    </div><!-- /tab-history -->
+      <div id="invoiceList"><p class="empty-msg">Loading...</p></div>
+    </div>
 
-  </aside><!-- /form-panel -->
+  </aside>
 
   <!-- ── PREVIEW PANEL ── -->
-  <main class="preview-panel" id="previewPanel">
+  <main class="preview-panel">
     <div class="preview-toolbar">
-      <span class="preview-label">Live Preview</span>
+      <span class="prev-label">LIVE PREVIEW</span>
       <button class="btn-print-sm" onclick="generateAndPrint()">🖨 Print</button>
     </div>
 
-    <!-- ══════════════════════════════════════════
-         PRINTABLE INVOICE — this is what gets printed
-         ══════════════════════════════════════════ -->
-    <div id="invoiceWrapper" class="invoice-wrapper">
-      <div id="invoice" class="invoice-page">
+    <!-- THE ACTUAL INVOICE -->
+    <div id="invoiceWrapper">
+    <div id="invoice" class="invoice-page">
 
-        <!-- HEADER -->
-        <div class="inv-header">
-          <div class="inv-logo-block">
-            <!-- SVG Logo (recreated from the original) -->
-            <svg class="inv-logo-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
-              <!-- Outer decorative ring -->
-              <circle cx="32" cy="36" r="22" fill="none" stroke="#3a7d5a" stroke-width="2"/>
-              <circle cx="32" cy="36" r="14" fill="none" stroke="#3a7d5a" stroke-width="1.2"/>
-              <!-- Inner G -->
-              <text x="24" y="42" font-family="serif" font-size="18" font-weight="bold" fill="#3a7d5a">G</text>
-              <!-- Top feather/leaf motif -->
-              <path d="M32 14 C38 18 46 14 44 24 C42 32 34 34 32 42 C30 34 22 32 20 24 C18 14 26 18 32 14Z"
-                    fill="none" stroke="#3a7d5a" stroke-width="1.5" stroke-linejoin="round"/>
-              <!-- Small decorative dots -->
-              <circle cx="32" cy="12" r="1.5" fill="#3a7d5a"/>
-              <circle cx="46" cy="20" r="1" fill="#3a7d5a"/>
-              <circle cx="18" cy="20" r="1" fill="#3a7d5a"/>
-            </svg>
-            <div class="inv-company-text">
-              <div class="inv-company-name">GIANT EAGLE</div>
-              <div class="inv-company-sub">REAL ESTATE LTD</div>
-              <div class="inv-company-slogan">...trust the process.</div>
-            </div>
-          </div>
-          <div class="inv-meta-block">
+      <!-- TOP-RIGHT CORNER ACCENT (teal triangles matching letterhead) -->
+      <div class="corner-tr">
+        <div class="corner-tr-1"></div>
+        <div class="corner-tr-2"></div>
+      </div>
+
+      <!-- HEADER: Logo + Company Name + Invoice Number -->
+      <div class="inv-header">
+        <div class="inv-logo-area">
+          <!-- Official-style logo SVG: winged eagle emblem -->
+          <svg class="inv-logo-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="40" cy="44" r="22" fill="none" stroke="#1a5276" stroke-width="2"/>
+            <circle cx="40" cy="44" r="15" fill="none" stroke="#1a5276" stroke-width="1.2"/>
+            <text x="32" y="51" font-family="Georgia,serif" font-size="18" font-weight="bold" fill="#1a5276">G</text>
+            <!-- Left wing -->
+            <path d="M18 44 C10 30 9 16 18 13 C24 11 30 22 27 32 C25 38 22 42 18 44Z" fill="none" stroke="#1a5276" stroke-width="1.5"/>
+            <path d="M18 44 C13 34 12 22 19 18 C21 21 23 28 21 35Z" fill="#1a5276" opacity="0.15"/>
+            <!-- Right wing -->
+            <path d="M62 44 C70 30 71 16 62 13 C56 11 50 22 53 32 C55 38 58 42 62 44Z" fill="none" stroke="#1a5276" stroke-width="1.5"/>
+            <path d="M62 44 C67 34 68 22 61 18 C59 21 57 28 59 35Z" fill="#1a5276" opacity="0.15"/>
+            <!-- Top decoration -->
+            <path d="M40 22 C43 17 47 15 45 21 C43 25 41 27 40 22Z" fill="#1a5276" opacity="0.6"/>
+            <path d="M40 22 C37 17 33 15 35 21 C37 25 39 27 40 22Z" fill="#1a5276" opacity="0.6"/>
+            <circle cx="40" cy="14" r="2.5" fill="#1a5276" opacity="0.7"/>
+          </svg>
+          <div class="inv-company-block">
             <div class="inv-rc">RC: 7451912</div>
-            <div class="inv-number" id="prev-invoiceNo">INVOICE 001</div>
-            <div class="inv-date" id="prev-invoiceDate">Date: —</div>
+            <div class="inv-co-name">GIANT EAGLE</div>
+            <div class="inv-co-sub">REAL ESTATE LTD</div>
+            <div class="inv-co-slogan">...trust the process.</div>
           </div>
         </div>
-
-        <!-- Decorative top border line -->
-        <div class="inv-top-rule"></div>
-
-        <!-- CLIENT INFO -->
-        <div class="inv-client-block">
-          <div class="inv-client-name" id="prev-customerName">—</div>
-          <div class="inv-client-address" id="prev-propertyDescription">—</div>
+        <div class="inv-number-block">
+          <div class="inv-number" id="prev-invoiceNo">INVOICE 001</div>
+          <div class="inv-date"   id="prev-invoiceDate">Date: —</div>
         </div>
+      </div>
 
-        <!-- Invoice Title -->
-        <div class="inv-title-row">
-          <span class="inv-title">OFFICE SPACE RENT INVOICE</span>
-        </div>
+      <!-- DIVIDER -->
+      <hr class="inv-divider" />
 
-        <!-- Units Table -->
-        <table class="inv-table" id="prev-unitsTable">
-          <thead>
-            <tr>
-              <th>Description:</th>
-              <th>Size:</th>
-              <th>Rate</th>
-              <th>Amount (₦)</th>
-            </tr>
-          </thead>
-          <tbody id="prev-unitsBody">
-            <tr>
-              <td colspan="4" style="text-align:center;color:#aaa;">Add units in the form</td>
-            </tr>
+      <!-- CLIENT BLOCK -->
+      <div class="inv-client">
+        <div class="inv-client-name" id="prev-customerName"></div>
+        <div class="inv-client-addr" id="prev-propertyDescription"></div>
+      </div>
+
+      <!-- INVOICE TITLE -->
+      <div class="inv-title">OFFICE SPACE RENT INVOICE</div>
+
+      <!-- UNITS TABLE -->
+      <table class="inv-table">
+        <thead>
+          <tr>
+            <th>Description:</th>
+            <th>Size:</th>
+            <th>Rate</th>
+            <th>Amount (₦)</th>
+          </tr>
+        </thead>
+        <tbody id="prev-unitsBody">
+          <tr><td colspan="4" class="table-placeholder">Add units in the form</td></tr>
+        </tbody>
+      </table>
+
+      <!-- TOTALS -->
+      <div class="inv-totals">
+        <p>Sub Total: <span id="prev-subTotal">₦0</span></p>
+        <p id="prev-discountRow" style="display:none">Further Discount of: <span id="prev-discountAmt">₦0</span></p>
+        <p class="inv-agreed"><strong>AGREED AMOUNT PAYABLE: <span id="prev-agreedAmt">₦0</span></strong></p>
+      </div>
+
+      <!-- ADDITIONAL CHARGES -->
+      <div class="inv-charges">
+        <p class="charges-label">Additional Charges:</p>
+        <table class="charges-table">
+          <thead><tr><th>Description</th><th>Rate</th><th>Amount</th></tr></thead>
+          <tbody>
+            <tr><td>Legal Fee</td><td id="prev-legalRate">5%</td><td id="prev-legalAmt">₦0</td></tr>
+            <tr><td>Agency Fee</td><td id="prev-agencyRate">5%</td><td id="prev-agencyAmt">₦0</td></tr>
           </tbody>
         </table>
+      </div>
 
-        <!-- Totals block -->
-        <div class="inv-totals">
-          <p class="inv-subtotal">Sub Total: <span id="prev-subTotal">₦0</span></p>
-          <p class="inv-discount" id="prev-discountRow" style="display:none">Further Discount of: <span id="prev-discountAmt">₦0</span></p>
-          <p class="inv-agreed"><strong>AGREED AMOUNT PAYABLE: <span id="prev-agreedAmt">₦0</span></strong></p>
+      <!-- GRAND TOTAL -->
+      <p class="inv-grand"><strong>GRAND TOTAL PAYABLE: <span id="prev-grandTotal">₦0</span></strong></p>
+
+      <!-- BANK DETAILS -->
+      <div class="inv-bank">
+        <p class="bank-label"><u>RENT ACCOUNT:</u></p>
+        <p class="bank-line"><em><strong>The Landlord's Bank Name: <span id="prev-bankName">FCMB</span></strong></em></p>
+        <p class="bank-line"><em><strong>Account Name: <span id="prev-accountName">HATFIELD GUEST</span></strong></em></p>
+        <p class="bank-line"><em><strong>Account Number: <span id="prev-accountNumber">2007052014</span></strong></em></p>
+      </div>
+
+      <!-- PAYMENT INSTRUCTION -->
+      <p class="inv-instruction">Kindly make payment and forward evidence of payment to <strong><span id="prev-paymentPhone">08032961727</span></strong> for confirmation.</p>
+
+      <!-- NOTES -->
+      <div id="prev-notesBlock" class="inv-notes" style="display:none">
+        <p id="prev-notes"></p>
+      </div>
+
+      <!-- SIGNATURE BLOCK -->
+      <div class="inv-sig-block">
+        <div class="inv-sig-left">
+          <p class="sig-thanks">Thank you for your patronage.</p>
+          <!-- REAL SIGNATURE EMBEDDED AS BASE64 IMAGE -->
+          <img src="data:image/png;base64,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" alt="Signature" class="sig-img" />
+          <div class="sig-underline"></div>
+          <div class="sig-name"><strong>CEO</strong><br/>Braveman Akpor</div>
         </div>
-
-        <!-- Additional Charges -->
-        <div class="inv-charges-section">
-          <p class="inv-charges-label">Additional Charges:</p>
-          <table class="inv-charges-table" id="prev-chargesTable">
-            <thead>
-              <tr><th>Description</th><th>Rate</th><th>Amount</th></tr>
-            </thead>
-            <tbody id="prev-chargesBody">
-              <tr><td>Legal Fee</td><td id="prev-legalRate">5%</td><td id="prev-legalAmt">₦0</td></tr>
-              <tr><td>Agency Fee</td><td id="prev-agencyRate">5%</td><td id="prev-agencyAmt">₦0</td></tr>
-            </tbody>
-          </table>
+        <div class="inv-stamp-zone">
+          <span class="stamp-line">Sign:......................................</span>
         </div>
+      </div>
 
-        <!-- Grand Total -->
-        <div class="inv-grand-total">
-          <strong>GRAND TOTAL PAYABLE: <span id="prev-grandTotal">₦0</span></strong>
+      <!-- FOOTER -->
+      <div class="inv-footer">
+        <hr class="footer-rule" />
+        <div class="footer-items">
+          <span class="fi">📍 Suite 001 Millennium Builders Plaza, Herbert Macaulay Way, Central Business District Area Abuja.</span>
+          <span class="fi">✉ gianteaglerealestateltd@gmail.com</span>
+          <span class="fi">🌐 www.gianteaglerealestate.com</span>
+          <span class="fi">📞 +234 803 296 1727</span>
         </div>
+      </div>
 
-        <!-- Bank Details -->
-        <div class="inv-bank-section">
-          <p class="inv-bank-label"><u>RENT ACCOUNT:</u></p>
-          <p class="inv-bank-line"><strong>The Landlord's Bank Name: <span id="prev-bankName">—</span></strong></p>
-          <p class="inv-bank-line"><strong>Account Name: <span id="prev-accountName">—</span></strong></p>
-          <p class="inv-bank-line"><strong>Account Number: <span id="prev-accountNumber">—</span></strong></p>
-        </div>
+      <!-- BOTTOM-LEFT CORNER ACCENT -->
+      <div class="corner-bl">
+        <div class="corner-bl-1"></div>
+        <div class="corner-bl-2"></div>
+      </div>
 
-        <!-- Payment Instruction -->
-        <div class="inv-payment-instruction">
-          <p id="prev-paymentInstruction">Kindly make payment and forward evidence of payment to <strong><span id="prev-paymentPhone">08032961727</span></strong> for confirmation.</p>
-        </div>
+    </div><!-- /invoice-page -->
+    </div><!-- /invoiceWrapper -->
+  </main>
 
-        <!-- Notes -->
-        <div class="inv-notes" id="prev-notesBlock" style="display:none">
-          <p id="prev-notes"></p>
-        </div>
+</div>
 
-        <!-- Signature -->
-        <div class="inv-signature-block">
-          <div class="inv-signature-left">
-            <p class="inv-thank-you">Thank you for your patronage.</p>
-            <!-- Signature image (SVG recreation of handwritten sig) -->
-            <div class="inv-sig-image">
-              <svg viewBox="0 0 160 80" xmlns="http://www.w3.org/2000/svg" class="sig-svg">
-                <path d="M20 55 C25 40 30 35 35 38 C42 42 38 55 45 50 C52 45 48 30 55 35 C62 40 58 58 65 52 C70 47 68 38 75 42 C82 46 78 60 85 55 C90 50 88 40 95 38 C100 37 102 45 108 50 C114 55 112 45 118 42 C124 39 126 50 132 48" 
-                      stroke="#222" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M30 60 C40 62 50 65 60 62 C70 60 80 63 90 60"
-                      stroke="#222" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-                <text x="15" y="75" font-family="serif" font-size="8" fill="#555" font-style="italic">CEO</text>
-              </svg>
-            </div>
-            <div class="inv-sig-name">Braveman Akpor</div>
-          </div>
-          <!-- Right: stamp area is intentionally left blank (no RECEIVED stamp) -->
-          <div class="inv-stamp-area"></div>
-        </div>
-
-        <!-- Footer -->
-        <div class="inv-footer">
-          <div class="inv-footer-rule"></div>
-          <div class="inv-footer-cols">
-            <div class="inv-footer-item">
-              <span class="footer-icon">📍</span>
-              <span>Suite 001 Millennium Builders Plaza,<br/>Herbert Macaulay Way,<br/>Central Business District Area Abuja.</span>
-            </div>
-            <div class="inv-footer-item">
-              <span class="footer-icon">✉</span>
-              <span>gianteaglerealestateltd@gmail.com</span>
-            </div>
-            <div class="inv-footer-item">
-              <span class="footer-icon">🌐</span>
-              <span>www.gianteaglerealestate.com</span>
-            </div>
-            <div class="inv-footer-item">
-              <span class="footer-icon">📞</span>
-              <span>+234 803 296 1727</span>
-            </div>
-          </div>
-          <!-- Decorative corner triangle (bottom-right, matching original) -->
-          <div class="inv-corner-accent"></div>
-        </div>
-
-      </div><!-- /invoice-page -->
-    </div><!-- /invoice-wrapper -->
-
-  </main><!-- /preview-panel -->
-
-</div><!-- /app-shell -->
-
-<!-- ── TOAST NOTIFICATION ── -->
 <div id="toast" class="toast"></div>
-
-<!-- ── CONFIRM MODAL ── -->
 <div id="confirmModal" class="modal-overlay" style="display:none">
   <div class="modal-box">
     <p id="confirmMsg">Are you sure?</p>
-    <div class="modal-actions">
-      <button class="btn-confirm-yes" id="confirmYes">Yes, Delete</button>
-      <button class="btn-confirm-no" onclick="closeModal()">Cancel</button>
+    <div class="modal-btns">
+      <button class="mbtn-yes" id="confirmYes">Yes, Delete</button>
+      <button class="mbtn-no" onclick="closeModal()">Cancel</button>
     </div>
   </div>
 </div>
